@@ -98,7 +98,7 @@ def handle_message(event):
                 )
         return
         
-    if user_text in ["今日總結", "今天吃了什麼", "查詢紀錄", "查看總結"]:
+    if user_text in ["今日總結", "今天吃了什麼", "查詢紀錄", "查看總結", "【選單】今日總結", "【選單】查看紀錄"]:
         summary_data = tracker.get_daily_summary()
         summary = summary_data["summary"]
         records = summary_data["records"]
@@ -130,6 +130,82 @@ def handle_message(event):
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
                     messages=[TextMessage(text=msg)]
+                )
+            )
+        return
+
+    if user_text in ["刪除紀錄", "編輯紀錄", "【選單】刪除紀錄"]:
+        summary_data = tracker.get_daily_summary()
+        records = summary_data["records"]
+        
+        if not records:
+            msg = "💡 您今天還沒有任何飲食紀錄，無資料可刪除喔！"
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(reply_token=event.reply_token, messages=[TextMessage(text=msg)])
+                )
+            return
+            
+        # 建立 FlexMessage 的刪除按鈕卡片
+        contents = []
+        for rec in records:
+            emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(rec.get("light"), "⚪")
+            row = {
+                "type": "box",
+                "layout": "horizontal",
+                "margin": "md",
+                "alignItems": "center",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"{emoji} 【{rec.get('meal_type')}】\n{rec.get('food_name')}",
+                        "wrap": True,
+                        "weight": "bold",
+                        "size": "sm",
+                        "flex": 3
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "color": "#FF4D4D",
+                        "height": "sm",
+                        "flex": 1,
+                        "action": {
+                            "type": "postback",
+                            "label": "刪除",
+                            "data": f"action=delete_by_ts&ts={rec.get('timestamp')}"
+                        }
+                    }
+                ]
+            }
+            contents.append(row)
+            contents.append({"type": "separator", "margin": "md"})
+            
+        # 包裝成單張 Bubble
+        bubble = {
+            "type": "bubble",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "🗑️ 刪除飲食紀錄", "weight": "bold", "size": "lg", "color": "#FFFFFF"}
+                ],
+                "backgroundColor": "#FF4D4D"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": contents[:-1] # 去掉最後一個多餘的 separator
+            }
+        }
+        
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[FlexMessage(alt_text="編輯/刪除您的飲食紀錄", contents=FlexContainer.from_dict(bubble))]
                 )
             )
         return
@@ -477,6 +553,24 @@ def handle_postback(event):
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
                     messages=[TextMessage(text=f"✅ 已成功為您記錄今日【{meal_type}】！\n食物：{food_name}\n份量：{portion}\n\n💡 貼心提醒：若您按錯了，只要對我回覆「撤銷紀錄」這四個字，就可以刪除此筆記錄囉！")]
+                )
+            )
+            
+    elif params.get("action") == "delete_by_ts":
+        ts = params.get("ts")
+        removed = tracker.delete_record_by_timestamp(ts)
+        
+        if removed:
+            msg = f"🗑️ 已成功為您刪除紀錄！\n原資料：【{removed.get('meal_type')}】{removed.get('food_name')}"
+        else:
+            msg = "💡 刪除失敗，該筆紀錄可能已被移除。"
+            
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=msg)]
                 )
             )
 

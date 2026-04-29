@@ -64,6 +64,15 @@ class DietTracker:
             return removed
         return None
 
+    def delete_record_by_timestamp(self, timestamp: str) -> dict:
+        """根據時間戳記精準刪除指定紀錄"""
+        for i, log in enumerate(self.logs):
+            if log.get("timestamp") == timestamp:
+                removed = self.logs.pop(i)
+                self.save_logs()
+                return removed
+        return None
+
     def get_daily_summary(self, date_str: str = None) -> dict:
         """
         取得某一天的飲食燈號統計（圓餅圖數據來源）
