@@ -39,13 +39,29 @@ class GeminiChecker:
         }}
         """
 
+        # 嘗試使用不同的模型識別碼，解決 Render 上的 API 版本相容性問題
+        models_to_try = ["gemini-1.5-flash", "models/gemini-1.5-flash", "gemini-pro"]
+        text = ""
+        last_error = ""
+
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                text = response.text.strip()
+                if text:
+                    break # 成功獲取結果，跳出迴圈
+            except Exception as e:
+                last_error = str(e)
+                continue
+                
+        if not text:
+            raise ValueError(f"所有模型嘗試皆失敗。最後錯誤: {last_error}")
+
         try:
-            # 呼叫 API
-            response = self.model.generate_content(prompt)
-            text = response.text.strip()
-            
             # 清理可能的 Markdown 語法（防呆）
             if text.startswith("```"):
+                text = text.replace("```json", "").replace("```", "").strip()
                 text = text.replace("```json", "").replace("```", "").strip()
                 
             # 解析 JSON
