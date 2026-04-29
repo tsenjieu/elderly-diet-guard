@@ -27,6 +27,7 @@ CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 from food_logic.checker import FoodChecker
+from food_logic.gemini_checker import GeminiChecker
 
 app = FastAPI()
 
@@ -37,11 +38,18 @@ configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 # 實例化我們的「大腦」
-try:
-    checker = FoodChecker()
-    print("✅ 成功載入舒酸與三高核心資料庫")
-except Exception as e:
-    print(f"❌ 資料庫載入失敗：{e}")
+checker = FoodChecker()
+ai_checker = None
+
+# 如果有設定 Gemini API Key，才啟用 AI 模式
+if os.getenv("GEMINI_API_KEY"):
+    try:
+        ai_checker = GeminiChecker()
+        print("✅ 成功啟用 Gemini AI 智慧外掛")
+    except Exception as e:
+        print(f"❌ Gemini AI 載入失敗：{e}")
+else:
+    print("ℹ️ 尚未設定 GEMINI_API_KEY，AI 外掛暫時停用。")
 
 @app.post("/callback")
 async def callback(request: Request):
@@ -82,10 +90,80 @@ def handle_message(event):
         matched_names = checker.search_foods(user_text)
     
     if not matched_names:
-        reply_message = TextMessage(
-            text=f"🔍 找不到與「{user_text}」相關的食材。\n\n"
-                 "💡 建議您輸入更簡短的關鍵字（例如：將『高麗菜炒肉絲』改成『高麗菜』或『豬肉』）。"
-        )
+        if ai_checker:
+            # 呼叫 Gemini AI
+            result = ai_checker.check_food_with_ai(user_text)
+            lights = result.get("individual_lights", {})
+            
+            def get_emoji(light_code):
+                return {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(light_code, "⚪")
+                
+            # 建立單張 AI 卡片
+            bubble = {
+                "type": "bubble",
+                "size": "kilo",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": f"{result['name']} (AI分析)",
+                            "weight": "bold",
+                            "size": "xl",
+                            "color": "#FFFFFF"
+                        }
+                    ],
+                    "backgroundColor": "#6A5ACD" # 紫色表頭，區別於本地資料庫
+                },
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": f"痛風 {get_emoji(lights.get('痛風'))}", "size": "md", "weight": "bold"},
+                                {"type": "text", "text": f"血壓 {get_emoji(lights.get('高血壓'))}", "size": "md", "weight": "bold"}
+                            ],
+                            "margin": "md"
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": f"血糖 {get_emoji(lights.get('糖尿病'))}", "size": "md", "weight": "bold"},
+                                {"type": "text", "text": f"血脂 {get_emoji(lights.get('高血脂'))}", "size": "md", "weight": "bold"}
+                            ],
+                            "margin": "md"
+                        },
+                        {
+                            "type": "separator",
+                            "margin": "lg"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"📝 {result['reason']}",
+                            "wrap": True,
+                            "size": "sm",
+                            "color": "#666666",
+                            "margin": "lg",
+                            "maxLines": 5
+                        }
+                    ]
+                }
+            }
+            
+            reply_message = FlexMessage(
+                alt_text=f"AI 為您分析「{user_text}」的營養成分",
+                contents=FlexContainer.from_dict({"type": "carousel", "contents": [bubble]})
+            )
+        else:
+            reply_message = TextMessage(
+                text=f"🔍 找不到與「{user_text}」相關的食材。\n\n"
+                     "💡 建議您輸入更簡短的關鍵字。"
+            )
     else:
         # Carousel 最多支援 12 張卡片，我們取前 10 筆
         limit = 10
