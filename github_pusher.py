@@ -35,10 +35,10 @@ try:
         
         for desc, cmd in commands:
             print(f"> {desc}")
-            # subprocess 執行
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            if result.returncode != 0 and "remote origin already exists" not in result.stderr:
-                print(f"⚠️ 執行警告: {result.stderr.strip()}")
+            # 不擷取輸出，直接印在畫面上，避免 Windows 的編碼解碼問題 (cp950 / UTF-8)
+            result = subprocess.run(cmd, shell=True)
+            if result.returncode != 0:
+                print(f"⚠️ 執行警告！")
                 
         print("\n✅ 推送完成！請回到您的 GitHub 網頁重新整理，看看檔案是不是都上去了！")
         print("接下來，請參考我傳給您的教學，前往 Render 進行最終連線。")
