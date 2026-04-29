@@ -13,7 +13,8 @@ print("        -> 直接點擊最下方的 Create repository 按鈕")
 print("\n步驟 2: 建立成功後，複製網址列的網址 (例如: https://github.com/您的帳號/linebot-health.git)")
 
 try:
-    repo_url = input("\n步驟 3: 請在此處「按右鍵貼上」那串網址，然後按 Enter：").strip()
+    repo_url = "https://github.com/tsenjieu/elderly-diet-guard.git"
+    print(f"\n[自動偵測] 偵測到固定的 GitHub 專案網址：\n👉 {repo_url}\n")
     
     if not repo_url or not repo_url.startswith("http"):
         print("\n❌ 網址格式錯誤！請關閉視窗後重新執行。")

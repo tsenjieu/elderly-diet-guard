@@ -76,6 +76,28 @@ async def callback(request: Request):
 def handle_message(event):
     user_text = event.message.text.strip()
     
+    if user_text == "撤銷紀錄":
+        removed = tracker.delete_last_record()
+        if removed:
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=f"🗑️ 已成功撤銷上一筆紀錄！\n原紀錄：【{removed.get('meal_type')}】{removed.get('food_name')}")]
+                    )
+                )
+        else:
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="💡 目前資料庫中沒有可供撤銷的飲食紀錄喔！")]
+                    )
+                )
+        return
+        
     # 攔截圖文選單的專屬指令
     is_menu_command = False
     if user_text.startswith("【選單】"):
@@ -418,7 +440,7 @@ def handle_postback(event):
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=f"✅ 已成功為您記錄今日【{meal_type}】！\n食物：{food_name}\n份量：{portion}")]
+                    messages=[TextMessage(text=f"✅ 已成功為您記錄今日【{meal_type}】！\n食物：{food_name}\n份量：{portion}\n\n💡 貼心提醒：若您按錯了，只要對我回覆「撤銷紀錄」這四個字，就可以刪除此筆記錄囉！")]
                 )
             )
 

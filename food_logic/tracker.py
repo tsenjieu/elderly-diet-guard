@@ -56,6 +56,14 @@ class DietTracker:
         self.save_logs()
         return record
 
+    def delete_last_record(self) -> dict:
+        """刪除最後一筆飲食紀錄（防誤按）"""
+        if self.logs:
+            removed = self.logs.pop()
+            self.save_logs()
+            return removed
+        return None
+
     def get_daily_summary(self, date_str: str = None) -> dict:
         """
         取得某一天的飲食燈號統計（圓餅圖數據來源）
