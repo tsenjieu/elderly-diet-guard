@@ -105,31 +105,116 @@ def handle_message(event):
         
         if summary["total"] == 0:
             msg = "💡 您今天還沒有記錄任何飲食喔！\n點選食物查詢卡片下方的按鈕就可以開始記錄了！"
-        else:
-            msg = f"📊 【今日飲食健康總結】\n📅 日期：{summary_data['date']}\n"
-            msg += f"────────────────\n"
-            msg += f"🟢 推薦安全 (綠燈): {summary['GREEN']} 份\n"
-            msg += f"🟡 控量食用 (黃燈): {summary['YELLOW']} 份\n"
-            msg += f"🔴 地雷禁忌 (紅燈): {summary['RED']} 份\n"
-            msg += f"────────────────\n"
-            msg += f"📋 詳細清單：\n"
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(reply_token=event.reply_token, messages=[TextMessage(text=msg)])
+                )
+            return
             
-            for rec in records:
-                emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(rec.get("light"), "⚪")
-                msg += f"• 【{rec.get('meal_type')}】{rec.get('food_name')} ({emoji})\n"
-                
-            # 依據紅燈數量給予關懷
-            if summary["RED"] > 0:
-                msg += f"\n⚠️ 貼心醫護提醒：您今天吃到了 {summary['RED']} 次地雷紅燈食物。接下來要記得多多補充水分幫助代謝，並嚴格避開高油高鹽的料理喔！"
-            else:
-                msg += f"\n🎉 太棒了！您今天完全沒有吃到任何地雷紅燈食物！請繼續維持這份無負擔的完美飲食！"
-                
+        # 建立一體化的 FlexMessage
+        contents = [
+            {
+                "type": "text",
+                "text": f"📅 日期：{summary_data['date']}",
+                "size": "sm",
+                "color": "#888888"
+            },
+            {
+                "type": "box",
+                "layout": "vertical",
+                "margin": "lg",
+                "spacing": "sm",
+                "contents": [
+                    {"type": "text", "text": f"🟢 推薦安全 (綠燈): {summary['GREEN']} 份", "weight": "bold", "color": "#28a745"},
+                    {"type": "text", "text": f"🟡 控量食用 (黃燈): {summary['YELLOW']} 份", "weight": "bold", "color": "#ffc107"},
+                    {"type": "text", "text": f"🔴 地雷禁忌 (紅燈): {summary['RED']} 份", "weight": "bold", "color": "#dc3545"}
+                ]
+            },
+            {"type": "separator", "margin": "lg"},
+            {
+                "type": "text",
+                "text": "📋 詳細飲食清單：",
+                "weight": "bold",
+                "size": "md",
+                "margin": "lg"
+            }
+        ]
+        
+        for rec in records:
+            emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(rec.get("light"), "⚪")
+            row = {
+                "type": "box",
+                "layout": "horizontal",
+                "margin": "md",
+                "alignItems": "center",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"{emoji} 【{rec.get('meal_type')}】\n{rec.get('food_name')}",
+                        "wrap": True,
+                        "size": "sm",
+                        "flex": 3
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "color": "#FF4D4D",
+                        "height": "sm",
+                        "flex": 1,
+                        "action": {
+                            "type": "postback",
+                            "label": "刪除",
+                            "data": f"action=delete_by_ts&ts={rec.get('timestamp')}"
+                        }
+                    }
+                ]
+            }
+            contents.append(row)
+            contents.append({"type": "separator", "margin": "xs"})
+            
+        if len(records) > 0:
+            contents = contents[:-1]
+            
+        # 醫護叮嚀
+        if summary["RED"] > 0:
+            advice = f"⚠️ 貼心醫護提醒：您今天吃到了 {summary['RED']} 次地雷紅燈食物。接下來要記得多補充水分幫助代謝，嚴格避開高油鹽料理喔！"
+        else:
+            advice = f"🎉 太棒了！您今天完全沒有吃到任何地雷紅燈食物！請繼續維持無負擔的完美飲食！"
+            
+        contents.append({"type": "separator", "margin": "lg"})
+        contents.append({
+            "type": "text",
+            "text": advice,
+            "wrap": True,
+            "size": "sm",
+            "color": "#555555",
+            "margin": "lg"
+        })
+        
+        bubble = {
+            "type": "bubble",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "📊 今日飲食健康總結", "weight": "bold", "size": "lg", "color": "#FFFFFF"}
+                ],
+                "backgroundColor": "#2D3E50"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": contents
+            }
+        }
+        
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=msg)]
+                    messages=[FlexMessage(alt_text="您的今日飲食健康總結", contents=FlexContainer.from_dict(bubble))]
                 )
             )
         return
