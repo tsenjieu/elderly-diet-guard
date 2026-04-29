@@ -66,7 +66,7 @@ class GeminiChecker:
             
         except Exception as e:
             print(f"Gemini API 呼叫失敗: {e}")
-            # 萬一失敗，回傳一個安全的預設綠燈卡片，避免當機
+            # 萬一失敗，將錯誤原因秀在卡片上，方便我們隔空抓藥！
             return {
                 "name": food_name,
                 "individual_lights": {
@@ -75,5 +75,5 @@ class GeminiChecker:
                     "糖尿病": "GREEN",
                     "高血脂": "GREEN"
                 },
-                "reason": f"AI 暫時無法解析該食物。保守起見，建議您少量食用或諮詢醫師。"
+                "reason": f"⚠️ 除錯訊息：{str(e)[:40]}..."
             }
