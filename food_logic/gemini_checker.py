@@ -1,22 +1,17 @@
 import os
 import json
-import google.generativeai as genai
+import requests
 
 class GeminiChecker:
     def __init__(self):
         # 讀取環境變數
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
             raise ValueError("找不到 GEMINI_API_KEY，請確認環境變數已設定。")
-            
-        # 初始化 Gemini API
-        genai.configure(api_key=api_key)
-        # 使用穩定且快速的 gemini-1.5-flash 模型
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
 
     def check_food_with_ai(self, food_name):
         """
-        透過 Gemini AI 判定食材對四大慢性病的威脅燈號
+        透過 Gemini API (REST) 判定食材對四大慢性病的威脅燈號
         """
         prompt = f"""
         你是一位極度專業的「三高（高血壓、高血糖/糖尿病、高血脂）與痛風」臨床營養師。
@@ -39,29 +34,32 @@ class GeminiChecker:
         }}
         """
 
-        # 嘗試使用不同的模型識別碼，解決 Render 上的 API 版本相容性問題
-        models_to_try = ["gemini-1.5-flash", "models/gemini-1.5-flash", "gemini-pro"]
-        text = ""
-        last_error = ""
-
-        for model_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if text:
-                    break # 成功獲取結果，跳出迴圈
-            except Exception as e:
-                last_error = str(e)
-                continue
-                
-        if not text:
-            raise ValueError(f"所有模型嘗試皆失敗。最後錯誤: {last_error}")
-
         try:
+            # 使用最穩定的 REST API 呼叫方式，避開 SDK 版本地雷
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+            headers = {
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt}
+                        ]
+                    }
+                ]
+            }
+            
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code != 200:
+                raise ValueError(f"API 狀態碼錯誤：{response.status_code}, 內容：{response.text[:100]}")
+                
+            res_json = response.json()
+            text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+            
             # 清理可能的 Markdown 語法（防呆）
             if text.startswith("```"):
-                text = text.replace("```json", "").replace("```", "").strip()
                 text = text.replace("```json", "").replace("```", "").strip()
                 
             # 解析 JSON
@@ -82,7 +80,7 @@ class GeminiChecker:
             
         except Exception as e:
             print(f"Gemini API 呼叫失敗: {e}")
-            # 萬一失敗，將錯誤原因秀在卡片上，方便我們隔空抓藥！
+            # 萬一失敗，回傳一個安全的預設綠燈卡片，避免當機
             return {
                 "name": food_name,
                 "individual_lights": {
@@ -91,5 +89,6 @@ class GeminiChecker:
                     "糖尿病": "GREEN",
                     "高血脂": "GREEN"
                 },
-                "reason": f"⚠️ 除錯訊息：{str(e)[:40]}..."
+                "reason": f"AI 分析暫時遇到障礙。保守起見，建議您少量食用或諮詢專業醫師。"
             }
+
