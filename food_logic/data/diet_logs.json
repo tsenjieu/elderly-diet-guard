@@ -1,0 +1,34 @@
+[
+  {
+    "timestamp": "2026-04-29 21:17:33",
+    "date": "2026-04-29",
+    "meal_type": "早餐",
+    "food_name": "臭豆腐",
+    "light": "RED",
+    "portion": "一碗"
+  },
+  {
+    "timestamp": "2026-04-29 21:21:45",
+    "date": "2026-04-29",
+    "meal_type": "晚餐",
+    "food_name": "生鮮香菇",
+    "light": "YELLOW",
+    "portion": "一掌心"
+  },
+  {
+    "timestamp": "2026-04-29 21:24:33",
+    "date": "2026-04-29",
+    "meal_type": "晚餐",
+    "food_name": "控肉",
+    "light": "RED",
+    "portion": "一掌心"
+  },
+  {
+    "timestamp": "2026-04-29 21:25:23",
+    "date": "2026-04-29",
+    "meal_type": "點心",
+    "food_name": "芭樂",
+    "light": "GREEN",
+    "portion": "一掌心"
+  }
+]

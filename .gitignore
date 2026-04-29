@@ -1,0 +1,18 @@
+# 環境變數與機密金鑰 (絕對不可上傳)
+.env
+.env.*
+
+# Python 產生的暫存檔
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 虛擬環境
+venv/
+env/
+.venv/
+
+# 作業系統暫存檔
+.DS_Store
+Thumbs.db

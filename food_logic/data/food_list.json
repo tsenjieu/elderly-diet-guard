@@ -1,0 +1,170 @@
+{
+  "芭樂": {
+    "name": "芭樂",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "富含維生素 C 與纖維，有助排尿酸且糖分低。"
+  },
+  "滷肉飯": {
+    "name": "滷肉飯",
+    "gout": "YELLOW",
+    "hypertension": "RED",
+    "diabetes": "RED",
+    "hyperlipidemia": "RED",
+    "reason": "精緻澱粉加上高油、高鹽的滷汁，極易使三高惡化。"
+  },
+  "虱目魚肚": {
+    "name": "虱目魚肚",
+    "gout": "RED",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "YELLOW",
+    "reason": "普林值偏高；雖富含魚油，但熱量與飽和脂肪需控制。"
+  },
+  "地瓜葉": {
+    "name": "地瓜葉",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "高纖低卡，有助穩定血糖與血壓。"
+  },
+  "鹹水雞": {
+    "name": "鹹水雞",
+    "gout": "YELLOW",
+    "hypertension": "RED",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "YELLOW",
+    "reason": "調味過鹹（鈉含量高），但蛋白質本體與蔬菜類對血糖友善。"
+  },
+  "木瓜": {
+    "name": "木瓜",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "YELLOW",
+    "hyperlipidemia": "GREEN",
+    "reason": "對痛風與代謝好，但水果糖分高，糖尿病需控量。"
+  },
+  "菜脯蛋": {
+    "name": "菜脯蛋",
+    "gout": "GREEN",
+    "hypertension": "RED",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "YELLOW",
+    "reason": "醃漬菜脯鹽分極高，油煎蛋含油量多，高血壓/高血脂不宜。"
+  },
+  "火鍋湯底": {
+    "name": "火鍋湯底",
+    "gout": "RED",
+    "hypertension": "RED",
+    "diabetes": "RED",
+    "hyperlipidemia": "RED",
+    "reason": "久煮湯底融出大量普林、高鈉且高熱量，絕對禁忌。"
+  },
+  "控肉": {
+    "name": "控肉",
+    "gout": "YELLOW",
+    "hypertension": "RED",
+    "diabetes": "YELLOW",
+    "hyperlipidemia": "RED",
+    "reason": "高飽和脂肪與高鈉，對心血管負擔極重。"
+  },
+  "糙米飯": {
+    "name": "糙米飯",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "高纖、低 GI，比白米更適合三高族群。"
+  },
+  "蚵仔煎": {
+    "name": "蚵仔煎",
+    "gout": "RED",
+    "hypertension": "RED",
+    "diabetes": "RED",
+    "hyperlipidemia": "RED",
+    "reason": "勾芡醬汁高糖、高鹽，蚵仔普林高且重油煎炸。"
+  },
+  "臭豆腐": {
+    "name": "臭豆腐",
+    "gout": "YELLOW",
+    "hypertension": "RED",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "RED",
+    "reason": "油炸物飽和脂肪多，泡菜與沾醬鈉含量爆表。"
+  },
+  "無糖豆漿": {
+    "name": "無糖豆漿",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "優質植物蛋白，有助於降低心血管負擔，對痛風適量安全。"
+  },
+  "豬肝": {
+    "name": "豬肝",
+    "gout": "RED",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "YELLOW",
+    "reason": "內臟類普林極高，絕對禁忌。"
+  },
+  "乾香菇": {
+    "name": "乾香菇",
+    "gout": "RED",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "乾貨類普林濃縮度極高，痛風急性期禁吃。"
+  },
+  "珍珠奶茶": {
+    "name": "珍珠奶茶",
+    "gout": "RED",
+    "hypertension": "RED",
+    "diabetes": "RED",
+    "hyperlipidemia": "RED",
+    "reason": "高果糖漿快速生成尿酸，引發血糖血脂失控。"
+  },
+  "白灼蝦": {
+    "name": "白灼蝦",
+    "gout": "RED",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "YELLOW",
+    "reason": "海鮮類普林偏高，高血脂需注意膽固醇。"
+  },
+  "烤香腸": {
+    "name": "烤香腸",
+    "gout": "YELLOW",
+    "hypertension": "RED",
+    "diabetes": "RED",
+    "hyperlipidemia": "RED",
+    "reason": "高飽和脂肪、高鈉，且加工肉品不利於尿酸代謝。"
+  },
+  "白米飯": {
+    "name": "白米飯",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "YELLOW",
+    "hyperlipidemia": "GREEN",
+    "reason": "精緻澱粉易使血糖快速升高，需控量（限半碗）。"
+  },
+  "蘋果": {
+    "name": "蘋果",
+    "gout": "GREEN",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "富含果膠與維生素，對三高與痛風皆友善。"
+  },
+  "生鮮香菇": {
+    "name": "生鮮香菇",
+    "gout": "YELLOW",
+    "hypertension": "GREEN",
+    "diabetes": "GREEN",
+    "hyperlipidemia": "GREEN",
+    "reason": "生鮮菇類水分多、普林未被濃縮，非痛風急性期可適量食用。"
+  }
+}
