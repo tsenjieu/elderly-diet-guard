@@ -98,6 +98,42 @@ def handle_message(event):
                 )
         return
         
+    if user_text in ["今日總結", "今天吃了什麼", "查詢紀錄", "查看總結"]:
+        summary_data = tracker.get_daily_summary()
+        summary = summary_data["summary"]
+        records = summary_data["records"]
+        
+        if summary["total"] == 0:
+            msg = "💡 您今天還沒有記錄任何飲食喔！\n點選食物查詢卡片下方的按鈕就可以開始記錄了！"
+        else:
+            msg = f"📊 【今日飲食健康總結】\n📅 日期：{summary_data['date']}\n"
+            msg += f"────────────────\n"
+            msg += f"🟢 推薦安全 (綠燈): {summary['GREEN']} 份\n"
+            msg += f"🟡 控量食用 (黃燈): {summary['YELLOW']} 份\n"
+            msg += f"🔴 地雷禁忌 (紅燈): {summary['RED']} 份\n"
+            msg += f"────────────────\n"
+            msg += f"📋 詳細清單：\n"
+            
+            for rec in records:
+                emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(rec.get("light"), "⚪")
+                msg += f"• 【{rec.get('meal_type')}】{rec.get('food_name')} ({emoji})\n"
+                
+            # 依據紅燈數量給予關懷
+            if summary["RED"] > 0:
+                msg += f"\n⚠️ 貼心醫護提醒：您今天吃到了 {summary['RED']} 次地雷紅燈食物。接下來要記得多多補充水分幫助代謝，並嚴格避開高油高鹽的料理喔！"
+            else:
+                msg += f"\n🎉 太棒了！您今天完全沒有吃到任何地雷紅燈食物！請繼續維持這份無負擔的完美飲食！"
+                
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=msg)]
+                )
+            )
+        return
+
     # 攔截圖文選單的專屬指令
     is_menu_command = False
     if user_text.startswith("【選單】"):
