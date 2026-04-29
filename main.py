@@ -98,6 +98,51 @@ def handle_message(event):
                 )
         return
         
+    days_to_query = 0
+    if user_text in ["健康週報", "每週總結", "本週報告", "【選單】健康週報"]:
+        days_to_query = 7
+    elif user_text in ["健康月報", "每月總結", "本月報告", "【選單】健康月報"]:
+        days_to_query = 30
+    else:
+        # 嘗試解析自填天數
+        cleaned_text = user_text.replace("天", "").strip()
+        if cleaned_text.isdigit():
+            days_to_query = int(cleaned_text)
+            
+    if days_to_query > 0:
+        summary_data = tracker.get_range_summary(days=days_to_query)
+        summary = summary_data["summary"]
+        
+        msg = f"📊 【長期飲食健康報告】\n"
+        msg += f"📅 統計區間：{summary_data['start_date']} ~ {summary_data['end_date']}\n"
+        msg += f"⏱️ 總天數：共計 {summary_data['days']} 天\n"
+        msg += f"────────────────\n"
+        msg += f"🟢 推薦安全 (綠燈): {summary['GREEN']} 次\n"
+        msg += f"🟡 控量食用 (黃燈): {summary['YELLOW']} 次\n"
+        msg += f"🔴 地雷禁忌 (紅燈): {summary['RED']} 次\n"
+        msg += f"────────────────\n"
+        
+        if summary["total"] == 0:
+            msg += f"💡 您在這段期間還沒有記錄任何飲食喔！"
+        else:
+            red_ratio = (summary["RED"] / summary["total"]) * 100
+            if summary["RED"] == 0:
+                msg += f"🎉 完美的防守戰果！您這段期間完全沒有吃到地雷紅燈，請繼續保持這項傲人的健康紀錄！"
+            elif red_ratio > 30:
+                msg += f"⚠️ 警訊：紅燈食物比例達 {red_ratio:.1f}%。請務必重新檢視飲食清單，並多喝水與諮詢專業醫師。"
+            else:
+                msg += f"💪 戰果統計：紅燈比例約為 {red_ratio:.1f}%。整體表現不錯，但仍有進步空間，繼續加油！"
+                
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=msg)]
+                )
+            )
+        return
+
     if user_text in ["今日總結", "今天吃了什麼", "查詢紀錄", "查看總結", "【選單】今日總結", "【選單】查看紀錄"]:
         summary_data = tracker.get_daily_summary()
         summary = summary_data["summary"]

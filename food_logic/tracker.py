@@ -73,6 +73,38 @@ class DietTracker:
                 return removed
         return None
 
+    def get_range_summary(self, days: int = 7) -> dict:
+        """取得過去指定天數的飲食燈號統計"""
+        from datetime import datetime, timedelta
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days-1) # 包含今天
+        
+        range_records = []
+        for log in self.logs:
+            log_date_str = log.get("date")
+            if log_date_str:
+                try:
+                    log_date = datetime.strptime(log_date_str, "%Y-%m-%d")
+                    if start_date.date() <= log_date.date() <= end_date.date():
+                        range_records.append(log)
+                except ValueError:
+                    continue
+                    
+        summary = {"RED": 0, "YELLOW": 0, "GREEN": 0, "UNKNOWN": 0, "total": 0}
+        for rec in range_records:
+            light = rec.get("light", "UNKNOWN")
+            if light in summary:
+                summary[light] += 1
+                summary["total"] += 1
+                
+        return {
+            "days": days,
+            "start_date": start_date.strftime("%Y-%m-%d"),
+            "end_date": end_date.strftime("%Y-%m-%d"),
+            "summary": summary,
+            "records": range_records
+        }
+
     def get_daily_summary(self, date_str: str = None) -> dict:
         """
         取得某一天的飲食燈號統計（圓餅圖數據來源）
