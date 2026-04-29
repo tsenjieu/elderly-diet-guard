@@ -14,8 +14,10 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import (
     MessageEvent,
-    TextMessageContent
+    TextMessageContent,
+    PostbackEvent
 )
+from linebot.v3.messaging import TextMessage
 from dotenv import load_dotenv
 
 # 讀取環境變數
@@ -40,6 +42,9 @@ handler = WebhookHandler(CHANNEL_SECRET)
 # 實例化我們的「大腦」
 checker = FoodChecker()
 ai_checker = None
+
+from food_logic.tracker import DietTracker
+tracker = DietTracker()
 
 # 如果有設定 Gemini API Key，才啟用 AI 模式
 if os.getenv("GEMINI_API_KEY"):
@@ -98,6 +103,15 @@ def handle_message(event):
             def get_emoji(light_code):
                 return {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(light_code, "⚪")
                 
+            # 判定 AI 綜合燈號
+            weights = {"RED": 3, "YELLOW": 2, "GREEN": 1, "UNKNOWN": 0}
+            max_weight = 0
+            final_light = "GREEN"
+            for cond_light in lights.values():
+                if weights.get(cond_light, 0) > max_weight:
+                    max_weight = weights[cond_light]
+                    final_light = cond_light
+
             # 建立單張 AI 卡片
             bubble = {
                 "type": "bubble",
@@ -150,6 +164,71 @@ def handle_message(event):
                             "color": "#666666",
                             "margin": "lg",
                             "maxLines": 5
+                        }
+                    ]
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "sm",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "spacing": "sm",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記早餐",
+                                        "data": f"action=log_meal&meal=早餐&food={result['name']}&light={final_light}"
+                                    }
+                                },
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記午餐",
+                                        "data": f"action=log_meal&meal=午餐&food={result['name']}&light={final_light}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "spacing": "sm",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記晚餐",
+                                        "data": f"action=log_meal&meal=晚餐&food={result['name']}&light={final_light}"
+                                    }
+                                },
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記點心",
+                                        "data": f"action=log_meal&meal=點心&food={result['name']}&light={final_light}"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
@@ -231,6 +310,71 @@ def handle_message(event):
                             "maxLines": 5
                         }
                     ]
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "sm",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "spacing": "sm",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記早餐",
+                                        "data": f"action=log_meal&meal=早餐&food={result['name']}&light={result.get('light', 'UNKNOWN')}"
+                                    }
+                                },
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記午餐",
+                                        "data": f"action=log_meal&meal=午餐&food={result['name']}&light={result.get('light', 'UNKNOWN')}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "spacing": "sm",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記晚餐",
+                                        "data": f"action=log_meal&meal=晚餐&food={result['name']}&light={result.get('light', 'UNKNOWN')}"
+                                    }
+                                },
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#28a745",
+                                    "height": "sm",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "記點心",
+                                        "data": f"action=log_meal&meal=點心&food={result['name']}&light={result.get('light', 'UNKNOWN')}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
             }
             bubbles.append(bubble)
@@ -254,6 +398,29 @@ def handle_message(event):
                 messages=[reply_message]
             )
         )
+
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    import urllib.parse
+    data = event.postback.data
+    params = dict(urllib.parse.parse_qsl(data))
+    
+    if params.get("action") == "log_meal":
+        meal_type = params.get("meal")
+        food_name = params.get("food")
+        light = params.get("light", "UNKNOWN")
+        portion = "一份"
+        
+        tracker.log_meal(meal_type, food_name, light, portion)
+        
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=f"✅ 已成功為您記錄今日【{meal_type}】！\n食物：{food_name}\n份量：{portion}")]
+                )
+            )
 
 if __name__ == "__main__":
     import uvicorn
