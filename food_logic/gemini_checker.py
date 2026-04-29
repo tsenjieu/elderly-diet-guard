@@ -35,8 +35,8 @@ class GeminiChecker:
         """
 
         try:
-            # 使用最穩定的 REST API 呼叫方式，避開 SDK 版本地雷
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+            # 使用最穩定的 REST API v1 正式版，避開 v1beta 的模型找不到地雷
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={self.api_key}"
             headers = {
                 "Content-Type": "application/json"
             }
