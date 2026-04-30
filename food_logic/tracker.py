@@ -12,6 +12,7 @@ class DietTracker:
         self.log_path = log_path
         self.logs = []
         self.sheet = None
+        self.users_sheet = None
         
         # 嘗試連線 Google Sheets
         self._init_google_sheets()
@@ -35,15 +36,23 @@ class DietTracker:
                 # 使用 gspread 內建的 service_account 方法，更簡潔且不依賴舊套件
                 client = gspread.service_account(filename=creds_path)
                 
-                # 開啟表單（須確保名稱完全一致）
+                # 開啟主要飲食表單
                 self.sheet = client.open("長輩飲食紀錄庫").sheet1
-                
-                # 讀取雲端所有紀錄
                 self.logs = self.sheet.get_all_records()
-                print("✅ 成功連線 Google Sheets 並同步資料庫！")
+                
+                # 開啟或建立使用者名單表單
+                try:
+                    self.users_sheet = client.open("長輩飲食紀錄庫").worksheet("Users")
+                except gspread.exceptions.WorksheetNotFound:
+                    # 如果找不到 Users 分頁，則建立一個並加上標題
+                    self.users_sheet = client.open("長輩飲食紀錄庫").add_worksheet(title="Users", rows="100", cols="5")
+                    self.users_sheet.append_row(["user_id", "display_name", "last_active"])
+                
+                print("✅ 成功連線 Google Sheets 並同步資料庫與使用者名單！")
             except Exception as e:
                 print(f"⚠️ Google Sheets 連線失敗: {e}")
                 self.sheet = None
+                self.users_sheet = None
         else:
             print("⚠️ 找不到 google_credentials.json，將使用本地 JSON 儲存。")
 
@@ -170,6 +179,39 @@ class DietTracker:
                     
                 return removed
         return None
+
+    # --- 使用者推播管理 ---
+    
+    def register_user(self, user_id: str, display_name: str = ""):
+        """註冊新使用者至 Users 表單，若已存在則更新最後活動時間"""
+        if not self.users_sheet:
+            return
+            
+        try:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cell = self.users_sheet.find(user_id)
+            if cell:
+                # 已存在，更新活動時間 (假設 user_id 在 A 欄, last_active 在 C 欄)
+                self.users_sheet.update_cell(cell.row, 3, now)
+                if display_name:
+                    self.users_sheet.update_cell(cell.row, 2, display_name)
+            else:
+                # 新使用者
+                self.users_sheet.append_row([user_id, display_name, now])
+                print(f"🆕 已註冊新使用者: {user_id}")
+        except Exception as e:
+            print(f"註冊使用者失敗: {e}")
+
+    def get_all_users(self) -> list:
+        """取得所有已註冊的使用者 ID 列表"""
+        if not self.users_sheet:
+            return []
+        try:
+            records = self.users_sheet.get_all_records()
+            return [r["user_id"] for r in records if r.get("user_id")]
+        except Exception as e:
+            print(f"讀取使用者名單失敗: {e}")
+            return []
 
     def get_range_summary(self, days: int = 7) -> dict:
         """取得過去指定天數的飲食燈號統計"""

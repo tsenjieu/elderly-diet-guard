@@ -8,6 +8,7 @@ from linebot.v3.messaging import (
     ApiClient,
     MessagingApi,
     ReplyMessageRequest,
+    PushMessageRequest,
     TextMessage,
     FlexMessage,
     FlexContainer
@@ -72,9 +73,63 @@ async def callback(request: Request):
         
     return "OK"
 
+# --- 定時推播功能 (Cron Jobs) ---
+
+@app.get("/cron/reminder")
+async def cron_reminder():
+    """發送下午與晚上的飲水關懷推播"""
+    import random
+    messages = [
+        "💡 溫馨提醒：現在是喝水時間喔！喝口水休息一下吧，保持身體代謝健康。💧",
+        "🌟 親愛的，別忘了喝水喔！每天分次喝夠 2000cc，對血壓和血糖都很有幫助！🥤",
+        "🩺 小叮嚀：這段時間記得補充水分，稀釋血液，讓身體更輕盈無負擔喔！",
+        "🕒 該喝水囉！一點一滴的累積，就是對健康最好的投資。加油！😊"
+    ]
+    reminder_text = random.choice(messages)
+    
+    user_ids = tracker.get_all_users()
+    if not user_ids:
+        return {"status": "no users found"}
+        
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        for user_id in user_ids:
+            try:
+                line_bot_api.push_message(PushMessageRequest(
+                    to=user_id,
+                    messages=[TextMessage(text=reminder_text)]
+                ))
+            except Exception as e:
+                print(f"推播失敗 ({user_id}): {e}")
+    return {"status": "reminders sent", "count": len(user_ids)}
+
+@app.get("/cron/summary")
+async def cron_summary():
+    """晚上 8:00 自動推播今日飲食總結"""
+    user_ids = tracker.get_all_users()
+    if not user_ids:
+        return {"status": "no users found"}
+        
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        for user_id in user_ids:
+            try:
+                # 簡單提示今天結束了，引導看報表
+                line_bot_api.push_message(PushMessageRequest(
+                    to=user_id,
+                    messages=[TextMessage(text="🌙 晚安！現在是晚上 8 點，快來查看您今天的健康飲食總結吧！\n(您可以直接點擊選單中的「今日總結」按鈕喔！)")]
+                ))
+            except Exception as e:
+                print(f"推播總結失敗 ({user_id}): {e}")
+    return {"status": "summaries triggered", "count": len(user_ids)}
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
+    user_id = event.source.user_id
     user_text = event.message.text.strip()
+    
+    # 自動註冊使用者 (Google Sheets)
+    tracker.register_user(user_id)
     
     if user_text == "撤銷紀錄":
         removed = tracker.delete_last_record()
