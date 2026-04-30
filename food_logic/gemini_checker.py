@@ -14,34 +14,36 @@ class GeminiChecker:
         透過 Gemini API (REST) 判定食材對四大慢性病的威脅燈號
         """
         prompt = f"""
-        你是一位極度專業的「三高（高血壓、高血糖/糖尿病、高血脂）與痛風」臨床營養師。
-        請針對使用者輸入的內容：【{food_name}】，判斷是否為食材、飲料或料理，若是，請進行飲食禁忌與營養評估。
+        你是一位極度嚴格且專業的「三高與痛風」臨床營養師。
+        使用者剛剛輸入了：【{food_name}】
 
-        【非食物防呆機制】：
-        如果使用者輸入的明顯【不是食物或料理】（例如：問候語「你好」、天氣、無意義的亂碼、生活閒聊），請直接將 JSON 中的 "is_food" 設為 false，其他欄位保留空字串即可。
+        【任務一：意圖與非食物攔截（最高優先級）】
+        請先判斷這句話是否為「具體的食材、飲料、料理或食物名稱」。
+        如果這是問候語（如：你好、早安、晚安）、閒聊、天氣、情緒發洩、疑問句或無意義的字詞（如：123、測試），這【絕對不是】食物！
+        -> 此時，你【必須】將回傳 JSON 中的 "is_food" 設為 false，並在 reason 填寫 "這不是食物"。"gout" 等燈號全部填 "UNKNOWN"。
 
-        【極度重要——最嚴格保守原則】（若為食物）：
-        作為臨床醫療系統，你必須採取「最嚴格、最保守」的判定態度。絕不輕易給予 GREEN（綠燈）。若該料理包含以下高危險因子，請毫不猶豫判定為 YELLOW 或 RED：
+        【任務二：醫學飲食分析（僅當 is_food 為 true 時）】
+        如果確認是食物，請採取「最嚴格、最保守」的判定態度。絕不輕易給予 GREEN（綠燈）。若該料理包含以下高危險因子，請毫不猶豫判定為 YELLOW 或 RED：
         - 痛風：凡含有「肉湯、火鍋濃湯、內臟、海鮮、高湯、肉類加工品」 -> 判定 RED。
         - 高血壓：凡含有「麻辣、重鹹、濃縮醬汁、醃漬物、沾醬」 -> 判定 RED。
         - 糖尿病：凡含有「高糖、勾芡、精緻澱粉、含糖醬料」 -> 判定 RED。
         - 高血脂：凡含有「油炸、油煎、肥肉、動物油、麻辣紅油」 -> 判定 RED。
 
-        請嚴格遵守以下燈號判定標準：
+        燈號標準：
         - "GREEN": 完全健康安全、無負擔。
         - "YELLOW": 普林/鈉/糖/脂肪偏中等，非急性發作期可「極少量嚴格控量」食用。
         - "RED": 絕對地雷，極易誘發急性併發症或發作，強烈不建議食用。
 
-        你【必須】僅回傳一個 JSON 格式的字串，嚴格禁止包含任何 Markdown 區塊（例如不要有 ```json 標記）或是多餘的解釋文字。
+        你【必須】僅回傳一個 JSON 格式的字串，嚴格禁止包含任何 Markdown 區塊或多餘的解釋文字。
         JSON 格式範例：
         {{
-            "is_food": true,
+            "is_food": true 或 false,
             "name": "{food_name}",
-            "nutritional_analysis": "（思維鏈）先客觀分析此食材的特性，例如：此為麻辣油炸食品，高鹽高油。",
-            "gout": "RED/YELLOW/GREEN",
-            "hypertension": "RED/YELLOW/GREEN",
-            "diabetes": "RED/YELLOW/GREEN",
-            "hyperlipidemia": "RED/YELLOW/GREEN",
+            "nutritional_analysis": "（若非食物則留空）客觀分析此食材的特性，例如：此為麻辣油炸食品，高鹽高油。",
+            "gout": "RED/YELLOW/GREEN 或 UNKNOWN",
+            "hypertension": "RED/YELLOW/GREEN 或 UNKNOWN",
+            "diabetes": "RED/YELLOW/GREEN 或 UNKNOWN",
+            "hyperlipidemia": "RED/YELLOW/GREEN 或 UNKNOWN",
             "reason": "給長輩的一句話醫護級貼心提醒（限50字以內）。"
         }}
         """
@@ -77,9 +79,18 @@ class GeminiChecker:
             # 解析 JSON
             parsed_data = json.loads(text)
             
+            # 智慧預測：如果 AI 忘記回傳 is_food，但所有燈號都是 UNKNOWN 或缺失，則視為非食物
+            raw_is_food = parsed_data.get("is_food")
+            if raw_is_food is None:
+                lights = [parsed_data.get("gout"), parsed_data.get("hypertension"), parsed_data.get("diabetes"), parsed_data.get("hyperlipidemia")]
+                is_food_final = not all(l in ["UNKNOWN", None, ""] for l in lights)
+            else:
+                # 確保轉型為 boolean
+                is_food_final = str(raw_is_food).lower() == "true"
+                
             # 轉換為與本地 FoodChecker 完全一致的輸出格式
             formatted_result = {
-                "is_food": parsed_data.get("is_food", True),
+                "is_food": is_food_final,
                 "name": parsed_data.get("name", food_name),
                 "reason": parsed_data.get("reason", "資料不足，建議諮詢醫師。"),
                 "individual_lights": {
