@@ -2,7 +2,6 @@ import json
 import os
 from datetime import datetime
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 class DietTracker:
     def __init__(self, log_path=None):
@@ -33,9 +32,8 @@ class DietTracker:
             
         if os.path.exists(creds_path):
             try:
-                scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-                creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
-                client = gspread.authorize(creds)
+                # 使用 gspread 內建的 service_account 方法，更簡潔且不依賴舊套件
+                client = gspread.service_account(filename=creds_path)
                 
                 # 開啟表單（須確保名稱完全一致）
                 self.sheet = client.open("長輩飲食紀錄庫").sheet1
