@@ -147,11 +147,16 @@ def handle_message(event):
         msg += f"💧 飲水總計: {summary.get('water_total', 0)} cc\n"
         msg += f"────────────────\n"
         
-        if summary["total"] == 0:
-            msg += f"💡 您在這段期間還沒有記錄任何飲食喔！"
+        if summary["total"] == 0 and summary.get("water_total", 0) == 0:
+            msg += f"💡 您在這段期間還沒有記錄任何飲食或水分喔！"
         else:
-            red_ratio = (summary["RED"] / summary["total"]) * 100
-            if summary["RED"] == 0:
+            red_ratio = 0
+            if summary["total"] > 0:
+                red_ratio = (summary["RED"] / summary["total"]) * 100
+                
+            if summary["total"] == 0:
+                msg += f"💧 這段期間只有記錄水份，記得也要多吃健康食物喔！"
+            elif summary["RED"] == 0:
                 msg += f"🎉 完美的防守戰果！您這段期間完全沒有吃到地雷紅燈，請繼續保持這項傲人的健康紀錄！"
             elif red_ratio > 30:
                 msg += f"⚠️ 警訊：紅燈食物比例達 {red_ratio:.1f}%。請務必重新檢視飲食清單，並多喝水與諮詢專業醫師。"
@@ -250,8 +255,10 @@ def handle_message(event):
         # 醫護叮嚀
         if summary["RED"] > 0:
             advice = f"⚠️ 貼心醫護提醒：您今天吃到了 {summary['RED']} 次地雷紅燈食物。接下來要記得多補充水分幫助代謝，嚴格避開高油鹽料理喔！"
-        else:
+        elif summary["total"] > 0:
             advice = f"🎉 太棒了！您今天完全沒有吃到任何地雷紅燈食物！請繼續維持無負擔的完美飲食！"
+        else:
+            advice = f"💧 今天只記錄了水分，記得也要按時吃點健康的食物喔！"
             
         contents.append({"type": "separator", "margin": "lg"})
         contents.append({
@@ -388,21 +395,28 @@ def handle_message(event):
         if ai_checker:
             # 呼叫 Gemini AI
             result = ai_checker.check_food_with_ai(user_text)
-            lights = result.get("individual_lights", {})
             
-            def get_emoji(light_code):
-                return {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(light_code, "⚪")
+            # 防呆機制：若 AI 判定輸入的不是食物
+            if result.get("is_food") == False:
+                reply_message = TextMessage(
+                    text=f"💡 系統偵測到「{user_text}」似乎不是食物或飲料喔！\n您可以試著輸入像「麻辣臭豆腐」或「高麗菜」等具體名稱，我會立刻為您進行健康分析！"
+                )
+            else:
+                lights = result.get("individual_lights", {})
                 
-            # 判定 AI 綜合燈號
-            weights = {"RED": 3, "YELLOW": 2, "GREEN": 1, "UNKNOWN": 0}
-            max_weight = 0
-            final_light = "GREEN"
-            for cond_light in lights.values():
-                if weights.get(cond_light, 0) > max_weight:
-                    max_weight = weights[cond_light]
-                    final_light = cond_light
-
-            # 建立單張 AI 卡片
+                def get_emoji(light_code):
+                    return {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(light_code, "⚪")
+                    
+                # 判定 AI 綜合燈號
+                weights = {"RED": 3, "YELLOW": 2, "GREEN": 1, "UNKNOWN": 0}
+                max_weight = 0
+                final_light = "GREEN"
+                for cond_light in lights.values():
+                    if weights.get(cond_light, 0) > max_weight:
+                        max_weight = weights[cond_light]
+                        final_light = cond_light
+    
+                # 建立單張 AI 卡片
             bubble = {
                 "type": "bubble",
                 "size": "kilo",
@@ -524,10 +538,11 @@ def handle_message(event):
                 }
             }
             
-            reply_message = FlexMessage(
-                alt_text=f"AI 為您分析「{user_text}」的營養成分",
-                contents=FlexContainer.from_dict({"type": "carousel", "contents": [bubble]})
-            )
+            if not result.get("is_food", True) == False:
+                reply_message = FlexMessage(
+                    alt_text=f"AI 為您分析「{user_text}」的營養成分",
+                    contents=FlexContainer.from_dict({"type": "carousel", "contents": [bubble]})
+                )
         else:
             reply_message = TextMessage(
                 text=f"🔍 找不到與「{user_text}」相關的食材。\n\n"

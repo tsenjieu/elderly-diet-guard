@@ -15,9 +15,12 @@ class GeminiChecker:
         """
         prompt = f"""
         你是一位極度專業的「三高（高血壓、高血糖/糖尿病、高血脂）與痛風」臨床營養師。
-        請針對使用者輸入的食材或料理：【{food_name}】，進行飲食禁忌與營養評估。
+        請針對使用者輸入的內容：【{food_name}】，判斷是否為食材、飲料或料理，若是，請進行飲食禁忌與營養評估。
 
-        【極度重要——最嚴格保守原則】：
+        【非食物防呆機制】：
+        如果使用者輸入的明顯【不是食物或料理】（例如：問候語「你好」、天氣、無意義的亂碼、生活閒聊），請直接將 JSON 中的 "is_food" 設為 false，其他欄位保留空字串即可。
+
+        【極度重要——最嚴格保守原則】（若為食物）：
         作為臨床醫療系統，你必須採取「最嚴格、最保守」的判定態度。絕不輕易給予 GREEN（綠燈）。若該料理包含以下高危險因子，請毫不猶豫判定為 YELLOW 或 RED：
         - 痛風：凡含有「肉湯、火鍋濃湯、內臟、海鮮、高湯、肉類加工品」 -> 判定 RED。
         - 高血壓：凡含有「麻辣、重鹹、濃縮醬汁、醃漬物、沾醬」 -> 判定 RED。
@@ -32,6 +35,7 @@ class GeminiChecker:
         你【必須】僅回傳一個 JSON 格式的字串，嚴格禁止包含任何 Markdown 區塊（例如不要有 ```json 標記）或是多餘的解釋文字。
         JSON 格式範例：
         {{
+            "is_food": true,
             "name": "{food_name}",
             "nutritional_analysis": "（思維鏈）先客觀分析此食材的特性，例如：此為麻辣油炸食品，高鹽高油。",
             "gout": "RED/YELLOW/GREEN",
@@ -71,18 +75,19 @@ class GeminiChecker:
                 text = text.replace("```json", "").replace("```", "").strip()
                 
             # 解析 JSON
-            data = json.loads(text)
+            parsed_data = json.loads(text)
             
             # 轉換為與本地 FoodChecker 完全一致的輸出格式
             formatted_result = {
-                "name": data.get("name", food_name),
+                "is_food": parsed_data.get("is_food", True),
+                "name": parsed_data.get("name", food_name),
+                "reason": parsed_data.get("reason", "資料不足，建議諮詢醫師。"),
                 "individual_lights": {
-                    "痛風": data.get("gout", "UNKNOWN"),
-                    "高血壓": data.get("hypertension", "UNKNOWN"),
-                    "糖尿病": data.get("diabetes", "UNKNOWN"),
-                    "高血脂": data.get("hyperlipidemia", "UNKNOWN")
-                },
-                "reason": data.get("reason", "資料不足，建議諮詢醫師。")
+                    "痛風": parsed_data.get("gout", "UNKNOWN"),
+                    "高血壓": parsed_data.get("hypertension", "UNKNOWN"),
+                    "糖尿病": parsed_data.get("diabetes", "UNKNOWN"),
+                    "高血脂": parsed_data.get("hyperlipidemia", "UNKNOWN")
+                }
             }
             return formatted_result
             
