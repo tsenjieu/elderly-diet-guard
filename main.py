@@ -397,15 +397,16 @@ def handle_message(event):
             result = ai_checker.check_food_with_ai(user_text)
             
             # 防呆機制 1：若 API 呼叫失敗（例如 Quota Exceeded）
-            if result.get("api_failed"):
+            if result.get("api_failed") or result.get("intent") == "ERROR":
                 reply_message = TextMessage(
                     text=f"💡 目前 AI 分析系統連線人數過多（伺服器忙碌中）。請稍等幾分鐘後再試試看喔！"
                 )
-            # 防呆機制 2：若 AI 判定輸入的不是食物
-            elif result.get("is_food") == False:
-                reply_message = TextMessage(
-                    text=f"💡 系統偵測到「{user_text}」似乎不是食物或飲料喔！\n您可以試著輸入像「麻辣臭豆腐」或「高麗菜」等具體名稱，我會立刻為您進行健康分析！"
-                )
+            # 模式切換 2：一般營養醫學問答 / 閒聊引導
+            elif result.get("intent") in ["QUESTION", "GREETING"]:
+                ans = result.get("answer")
+                if not ans:
+                    ans = f"💡 系統偵測到「{user_text}」似乎不是食物或飲料喔！\n您可以試著輸入像「麻辣臭豆腐」等具體名稱，或詢問健康飲食問題（如：痛風可以吃豆漿嗎？）。"
+                reply_message = TextMessage(text=ans)
             else:
                 lights = result.get("individual_lights", {})
                 
@@ -543,7 +544,7 @@ def handle_message(event):
                     }
                 }
             
-            if not result.get("is_food", True) == False and not result.get("api_failed"):
+            if result.get("intent") not in ["QUESTION", "GREETING", "ERROR"] and not result.get("api_failed"):
                 reply_message = FlexMessage(
                     alt_text=f"AI 為您分析「{user_text}」的營養成分",
                     contents=FlexContainer.from_dict({"type": "carousel", "contents": [bubble]})
