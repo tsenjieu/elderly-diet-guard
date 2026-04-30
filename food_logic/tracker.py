@@ -1,6 +1,8 @@
 import json
 import os
 from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 class DietTracker:
     def __init__(self, log_path=None):
@@ -10,7 +12,42 @@ class DietTracker:
             
         self.log_path = log_path
         self.logs = []
-        self.load_logs()
+        self.sheet = None
+        
+        # 嘗試連線 Google Sheets
+        self._init_google_sheets()
+        
+        # 若未連線成功，則讀取本地資料
+        if not self.sheet:
+            self.load_logs()
+
+    def _init_google_sheets(self):
+        """初始化 Google Sheets 連線，並同步資料"""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        
+        # 優先找尋 Render Secret Files 路徑，再找本地根目錄
+        creds_path = "/etc/secrets/google_credentials.json"
+        if not os.path.exists(creds_path):
+            creds_path = os.path.join(parent_dir, "google_credentials.json")
+            
+        if os.path.exists(creds_path):
+            try:
+                scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+                creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+                client = gspread.authorize(creds)
+                
+                # 開啟表單（須確保名稱完全一致）
+                self.sheet = client.open("長輩飲食紀錄庫").sheet1
+                
+                # 讀取雲端所有紀錄
+                self.logs = self.sheet.get_all_records()
+                print("✅ 成功連線 Google Sheets 並同步資料庫！")
+            except Exception as e:
+                print(f"⚠️ Google Sheets 連線失敗: {e}")
+                self.sheet = None
+        else:
+            print("⚠️ 找不到 google_credentials.json，將使用本地 JSON 儲存。")
 
     def load_logs(self):
         """讀取歷史飲食紀錄"""
@@ -46,14 +83,30 @@ class DietTracker:
         record = {
             "timestamp": now,
             "date": date_str,
+            "type": "food",
             "meal_type": meal_type,
             "food_name": food_name,
             "light": light,
-            "portion": portion
+            "portion": portion,
+            "amount_cc": ""
         }
         
         self.logs.append(record)
-        self.save_logs()
+        
+        if self.sheet:
+            try:
+                row = [
+                    record["timestamp"], record["date"], record["type"],
+                    record["meal_type"], record["food_name"], record["light"],
+                    record["portion"], record["amount_cc"]
+                ]
+                self.sheet.append_row(row)
+            except Exception as e:
+                print(f"寫入 Google Sheets 失敗: {e}")
+                self.save_logs()
+        else:
+            self.save_logs()
+            
         return record
 
     def log_water(self, amount_cc: int) -> dict:
@@ -69,12 +122,27 @@ class DietTracker:
             "type": "water",
             "meal_type": "飲水",
             "food_name": f"{amount_cc}cc",
-            "amount_cc": amount_cc,
-            "light": "WATER" # 特殊燈號避免混淆
+            "light": "WATER",
+            "portion": "",
+            "amount_cc": amount_cc
         }
         
         self.logs.append(record)
-        self.save_logs()
+        
+        if self.sheet:
+            try:
+                row = [
+                    record["timestamp"], record["date"], record["type"],
+                    record["meal_type"], record["food_name"], record["light"],
+                    record["portion"], record["amount_cc"]
+                ]
+                self.sheet.append_row(row)
+            except Exception as e:
+                print(f"寫入 Google Sheets 失敗: {e}")
+                self.save_logs()
+        else:
+            self.save_logs()
+            
         return record
 
     def delete_last_record(self) -> dict:
@@ -88,9 +156,20 @@ class DietTracker:
     def delete_record_by_timestamp(self, timestamp: str) -> dict:
         """根據時間戳記精準刪除指定紀錄"""
         for i, log in enumerate(self.logs):
-            if log.get("timestamp") == timestamp:
+            if str(log.get("timestamp")) == str(timestamp):
                 removed = self.logs.pop(i)
-                self.save_logs()
+                
+                if self.sheet:
+                    try:
+                        # 尋找試算表中的該時間戳，找到後刪除整列
+                        cell = self.sheet.find(str(timestamp))
+                        if cell:
+                            self.sheet.delete_rows(cell.row)
+                    except Exception as e:
+                        print(f"刪除 Google Sheets 紀錄失敗: {e}")
+                else:
+                    self.save_logs()
+                    
                 return removed
         return None
 
