@@ -422,126 +422,126 @@ def handle_message(event):
                         final_light = cond_light
     
                 # 建立單張 AI 卡片
-            bubble = {
-                "type": "bubble",
-                "size": "kilo",
-                "header": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": f"{result['name']} (AI分析)",
-                            "weight": "bold",
-                            "size": "xl",
-                            "color": "#FFFFFF"
-                        }
-                    ],
-                    "backgroundColor": "#6A5ACD" # 紫色表頭，區別於本地資料庫
-                },
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": f"痛風 {get_emoji(lights.get('痛風'))}", "size": "md", "weight": "bold"},
-                                {"type": "text", "text": f"血壓 {get_emoji(lights.get('高血壓'))}", "size": "md", "weight": "bold"}
-                            ],
-                            "margin": "md"
-                        },
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": f"血糖 {get_emoji(lights.get('糖尿病'))}", "size": "md", "weight": "bold"},
-                                {"type": "text", "text": f"血脂 {get_emoji(lights.get('高血脂'))}", "size": "md", "weight": "bold"}
-                            ],
-                            "margin": "md"
-                        },
-                        {
-                            "type": "separator",
-                            "margin": "lg"
-                        },
-                        {
-                            "type": "text",
-                            "text": f"📝 {result['reason']}",
-                            "wrap": True,
-                            "size": "sm",
-                            "color": "#666666",
-                            "margin": "lg",
-                            "maxLines": 5
-                        }
-                    ]
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "sm",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "spacing": "sm",
-                            "contents": [
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "color": "#28a745",
-                                    "height": "sm",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "記早餐",
-                                        "data": f"action=log_meal&meal=早餐&food={result['name']}&light={final_light}"
+                bubble = {
+                    "type": "bubble",
+                    "size": "kilo",
+                    "header": {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": f"{result['name']} (AI分析)",
+                                "weight": "bold",
+                                "size": "xl",
+                                "color": "#FFFFFF"
+                            }
+                        ],
+                        "backgroundColor": "#6A5ACD" # 紫色表頭，區別於本地資料庫
+                    },
+                    "body": {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "contents": [
+                                    {"type": "text", "text": f"痛風 {get_emoji(lights.get('痛風'))}", "size": "md", "weight": "bold"},
+                                    {"type": "text", "text": f"血壓 {get_emoji(lights.get('高血壓'))}", "size": "md", "weight": "bold"}
+                                ],
+                                "margin": "md"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "contents": [
+                                    {"type": "text", "text": f"血糖 {get_emoji(lights.get('糖尿病'))}", "size": "md", "weight": "bold"},
+                                    {"type": "text", "text": f"血脂 {get_emoji(lights.get('高血脂'))}", "size": "md", "weight": "bold"}
+                                ],
+                                "margin": "md"
+                            },
+                            {
+                                "type": "separator",
+                                "margin": "lg"
+                            },
+                            {
+                                "type": "text",
+                                "text": f"📝 {result['reason']}",
+                                "wrap": True,
+                                "size": "sm",
+                                "color": "#666666",
+                                "margin": "lg",
+                                "maxLines": 5
+                            }
+                        ]
+                    },
+                    "footer": {
+                        "type": "box",
+                        "layout": "vertical",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "spacing": "sm",
+                                "contents": [
+                                    {
+                                        "type": "button",
+                                        "style": "primary",
+                                        "color": "#28a745",
+                                        "height": "sm",
+                                        "action": {
+                                            "type": "postback",
+                                            "label": "記早餐",
+                                            "data": f"action=log_meal&meal=早餐&food={result['name']}&light={final_light}"
+                                        }
+                                    },
+                                    {
+                                        "type": "button",
+                                        "style": "primary",
+                                        "color": "#28a745",
+                                        "height": "sm",
+                                        "action": {
+                                            "type": "postback",
+                                            "label": "記午餐",
+                                            "data": f"action=log_meal&meal=午餐&food={result['name']}&light={final_light}"
+                                        }
                                     }
-                                },
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "color": "#28a745",
-                                    "height": "sm",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "記午餐",
-                                        "data": f"action=log_meal&meal=午餐&food={result['name']}&light={final_light}"
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "spacing": "sm",
+                                "contents": [
+                                    {
+                                        "type": "button",
+                                        "style": "primary",
+                                        "color": "#28a745",
+                                        "height": "sm",
+                                        "action": {
+                                            "type": "postback",
+                                            "label": "記晚餐",
+                                            "data": f"action=log_meal&meal=晚餐&food={result['name']}&light={final_light}"
+                                        }
+                                    },
+                                    {
+                                        "type": "button",
+                                        "style": "primary",
+                                        "color": "#28a745",
+                                        "height": "sm",
+                                        "action": {
+                                            "type": "postback",
+                                            "label": "記點心",
+                                            "data": f"action=log_meal&meal=點心&food={result['name']}&light={final_light}"
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "spacing": "sm",
-                            "contents": [
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "color": "#28a745",
-                                    "height": "sm",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "記晚餐",
-                                        "data": f"action=log_meal&meal=晚餐&food={result['name']}&light={final_light}"
-                                    }
-                                },
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "color": "#28a745",
-                                    "height": "sm",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "記點心",
-                                        "data": f"action=log_meal&meal=點心&food={result['name']}&light={final_light}"
-                                    }
-                                }
-                            ]
-                        }
-                    ]
+                                ]
+                            }
+                        ]
+                    }
                 }
-            }
             
             if not result.get("is_food", True) == False and not result.get("api_failed"):
                 reply_message = FlexMessage(
