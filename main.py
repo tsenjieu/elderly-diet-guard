@@ -98,6 +98,30 @@ def handle_message(event):
                 )
         return
         
+    if user_text in ["記錄喝水", "喝水", "【選單】記錄喝水"]:
+        water_amount = 100
+        tracker.log_water(water_amount)
+        
+        # 取得今日飲水進度
+        summary_data = tracker.get_daily_summary()
+        water_total = summary_data["summary"].get("water_total", 0)
+        remaining = max(0, 2000 - water_total)
+        
+        msg = f"💧 咕嚕咕嚕！已為您記錄 {water_amount}cc。\n今日已喝 {water_total} / 2000 cc"
+        if remaining > 0:
+            msg += f"，還差 {remaining}cc 就達標囉，繼續保持！"
+        else:
+            msg += f"🎉 恭喜！今日飲水目標 2000cc 已經順利達標囉！"
+            
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=msg)]
+                )
+            )
+        return
     days_to_query = 0
     if user_text in ["健康週報", "每週總結", "本週報告", "【選單】健康週報"]:
         days_to_query = 7
@@ -120,6 +144,7 @@ def handle_message(event):
         msg += f"🟢 推薦安全 (綠燈): {summary['GREEN']} 次\n"
         msg += f"🟡 控量食用 (黃燈): {summary['YELLOW']} 次\n"
         msg += f"🔴 地雷禁忌 (紅燈): {summary['RED']} 次\n"
+        msg += f"💧 飲水總計: {summary.get('water_total', 0)} cc\n"
         msg += f"────────────────\n"
         
         if summary["total"] == 0:
@@ -173,7 +198,8 @@ def handle_message(event):
                 "contents": [
                     {"type": "text", "text": f"🟢 推薦安全 (綠燈): {summary['GREEN']} 份", "weight": "bold", "color": "#28a745"},
                     {"type": "text", "text": f"🟡 控量食用 (黃燈): {summary['YELLOW']} 份", "weight": "bold", "color": "#ffc107"},
-                    {"type": "text", "text": f"🔴 地雷禁忌 (紅燈): {summary['RED']} 份", "weight": "bold", "color": "#dc3545"}
+                    {"type": "text", "text": f"🔴 地雷禁忌 (紅燈): {summary['RED']} 份", "weight": "bold", "color": "#dc3545"},
+                    {"type": "text", "text": f"💧 今日飲水進度: {summary.get('water_total', 0)} / 2000 cc", "weight": "bold", "color": "#17a2b8"}
                 ]
             },
             {"type": "separator", "margin": "lg"},
@@ -187,7 +213,7 @@ def handle_message(event):
         ]
         
         for rec in records:
-            emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(rec.get("light"), "⚪")
+            emoji = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢", "WATER": "💧"}.get(rec.get("light"), "⚪")
             row = {
                 "type": "box",
                 "layout": "horizontal",
