@@ -178,8 +178,8 @@ def handle_message(event):
         summary = summary_data["summary"]
         records = summary_data["records"]
         
-        if summary["total"] == 0:
-            msg = "💡 您今天還沒有記錄任何飲食喔！\n點選食物查詢卡片下方的按鈕就可以開始記錄了！"
+        if summary["total"] == 0 and summary.get("water_total", 0) == 0:
+            msg = "💡 您今天還沒有記錄任何飲食或喝水喔！\n點選下方選單就可以開始記錄了！"
             with ApiClient(configuration) as api_client:
                 line_bot_api = MessagingApi(api_client)
                 line_bot_api.reply_message(
@@ -396,8 +396,13 @@ def handle_message(event):
             # 呼叫 Gemini AI
             result = ai_checker.check_food_with_ai(user_text)
             
-            # 防呆機制：若 AI 判定輸入的不是食物
-            if result.get("is_food") == False:
+            # 防呆機制 1：若 API 呼叫失敗（例如 Quota Exceeded）
+            if result.get("api_failed"):
+                reply_message = TextMessage(
+                    text=f"💡 目前 AI 分析系統連線人數過多（伺服器忙碌中）。請稍等幾分鐘後再試試看喔！"
+                )
+            # 防呆機制 2：若 AI 判定輸入的不是食物
+            elif result.get("is_food") == False:
                 reply_message = TextMessage(
                     text=f"💡 系統偵測到「{user_text}」似乎不是食物或飲料喔！\n您可以試著輸入像「麻辣臭豆腐」或「高麗菜」等具體名稱，我會立刻為您進行健康分析！"
                 )
@@ -538,7 +543,7 @@ def handle_message(event):
                 }
             }
             
-            if not result.get("is_food", True) == False:
+            if not result.get("is_food", True) == False and not result.get("api_failed"):
                 reply_message = FlexMessage(
                     alt_text=f"AI 為您分析「{user_text}」的營養成分",
                     contents=FlexContainer.from_dict({"type": "carousel", "contents": [bubble]})

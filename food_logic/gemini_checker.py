@@ -104,8 +104,10 @@ class GeminiChecker:
             
         except Exception as e:
             print(f"Gemini API 呼叫失敗: {e}")
-            # 萬一失敗，回傳一個安全的預設綠燈卡片，避免當機
+            # 萬一失敗，回傳 api_failed 標記
             return {
+                "api_failed": True,
+                "is_food": False,
                 "name": food_name,
                 "individual_lights": {
                     "痛風": "UNKNOWN",
@@ -113,6 +115,5 @@ class GeminiChecker:
                     "糖尿病": "UNKNOWN",
                     "高血脂": "UNKNOWN"
                 },
-                "reason": "目前 AI 分析連線障礙，保守起見無法判定安全度。建議您詢問專業醫師。"
+                "reason": "目前 AI 伺服器忙碌，暫時無法判斷燈號。建議您先詢問專業醫師。"
             }
-
