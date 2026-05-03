@@ -35,7 +35,7 @@ from food_logic.gemini_checker import GeminiChecker
 app = FastAPI()
 
 if not CHANNEL_SECRET or not CHANNEL_ACCESS_TOKEN:
-    print("警告：尚未設定 LINE_CHANNEL_SECRET 或 LINE_CHANNEL_ACCESS_TOKEN。請檢查 .env 檔案。")
+    print("Warning: LINE_CHANNEL_SECRET or LINE_CHANNEL_ACCESS_TOKEN not set. Please check .env file.")
 
 configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
@@ -51,11 +51,11 @@ tracker = DietTracker()
 if os.getenv("GEMINI_API_KEY"):
     try:
         ai_checker = GeminiChecker()
-        print("✅ 成功啟用 Gemini AI 智慧外掛")
+        print("Success: Gemini AI plugin enabled")
     except Exception as e:
-        print(f"❌ Gemini AI 載入失敗：{e}")
+        print(f"Error: Gemini AI load failed: {e}")
 else:
-    print("ℹ️ 尚未設定 GEMINI_API_KEY，AI 外掛暫時停用。")
+    print("Info: GEMINI_API_KEY not set, AI plugin disabled.")
 
 @app.post("/callback")
 async def callback(request: Request):

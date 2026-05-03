@@ -48,13 +48,13 @@ class DietTracker:
                     self.users_sheet = client.open("長輩飲食紀錄庫").add_worksheet(title="Users", rows="100", cols="5")
                     self.users_sheet.append_row(["user_id", "display_name", "last_active"])
                 
-                print("✅ 成功連線 Google Sheets 並同步資料庫與使用者名單！")
+                print("Success: Connected to Google Sheets and synced database!")
             except Exception as e:
-                print(f"⚠️ Google Sheets 連線失敗: {e}")
+                print(f"Google Sheets connection failed: {e}")
                 self.sheet = None
                 self.users_sheet = None
         else:
-            print("⚠️ 找不到 google_credentials.json，將使用本地 JSON 儲存。")
+            print("Info: google_credentials.json not found, using local JSON.")
 
     def load_logs(self):
         """讀取歷史飲食紀錄"""
@@ -198,7 +198,7 @@ class DietTracker:
             else:
                 # 新使用者
                 self.users_sheet.append_row([user_id, display_name, now])
-                print(f"🆕 已註冊新使用者: {user_id}")
+                print(f"New user registered: {user_id}")
         except Exception as e:
             print(f"註冊使用者失敗: {e}")
 
